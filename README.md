@@ -37,3 +37,4 @@ python3 -m http.server 4173
 - 루트의 `IMG_3712.JPG`를 다른 파일로 바꾸려면 파일명을 유지하면 됩니다.
 - 여러 기본 이미지를 쓰고 싶다면 `app.js`의 `builtInImages` 배열에 항목을 추가하면 됩니다.
 # eta-bg-maker
+# eta-bg-maker
