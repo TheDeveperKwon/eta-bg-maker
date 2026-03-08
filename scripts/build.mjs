@@ -1,4 +1,4 @@
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const rootDir = process.cwd();
@@ -23,12 +23,33 @@ function buildAnalyticsConfig() {
   return `window.__ETA_ANALYTICS__ = Object.freeze(${JSON.stringify(config, null, 2)});\n`;
 }
 
+async function pathExists(targetPath) {
+  try {
+    await access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function copyStaticFile(filePath) {
-  await cp(path.join(rootDir, filePath), path.join(distDir, filePath));
+  const sourcePath = path.join(rootDir, filePath);
+
+  if (!(await pathExists(sourcePath))) {
+    return;
+  }
+
+  await cp(sourcePath, path.join(distDir, filePath));
 }
 
 async function copyStaticDir(dirPath) {
-  await cp(path.join(rootDir, dirPath), path.join(distDir, dirPath), {
+  const sourcePath = path.join(rootDir, dirPath);
+
+  if (!(await pathExists(sourcePath))) {
+    return;
+  }
+
+  await cp(sourcePath, path.join(distDir, dirPath), {
     recursive: true,
   });
 }
