@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>에브리타임 시간표 배경화면 만들기</title>
+    <meta
+      name="description"
+      content="시간표 이미지를 휴대폰 배경화면 크기에 맞춰 배치하고, 시계 안전 영역을 피해 PNG로 저장하는 편집기"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./analytics-config.js" defer></script>
+    <script src="./analytics.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="ambient ambient-one"></div>
+      <div class="ambient ambient-two"></div>
+
+      <header class="hero reveal">
+        <p class="hero-kicker">EVERYTIME TIMETABLE WALLPAPER MAKER</p>
+        <div class="hero-copy">
+          <h1>에브리타임 시간표 배경화면 만들기</h1>
+          <p>
+            휴대폰 비율을 고르고, 시계가 올라오는 영역을 피해 시간표 이미지를
+            배치한 뒤 PNG로 저장할 수 있습니다.
+          </p>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="control-panel reveal" style="--delay: 120ms">
+          <div class="panel-block">
+            <div class="section-heading">
+              <p class="eyebrow">STEP 1</p>
+              <h2>시간표 불러오기</h2>
+            </div>
+            <p class="block-copy">
+              배포 버전에서는 시간표를 직접 업로드해서 바로 사용할 수 있습니다.
+            </p>
+            <div class="source-grid" id="sourceGrid"></div>
+            <label class="upload-button" for="imageUpload">이미지 업로드</label>
+            <input
+              id="imageUpload"
+              class="visually-hidden"
+              type="file"
+              accept="image/*"
+            />
+          </div>
+
+          <div class="panel-block">
+            <div class="section-heading">
+              <p class="eyebrow">STEP 2</p>
+              <h2>화면 프로필</h2>
+            </div>
+            <p class="block-copy">
+              iPhone은 2016년부터 2025년 라인업까지, Galaxy는 2016년부터 2026년
+              플래그십 라인업까지 바로 선택할 수 있습니다.
+            </p>
+            <div class="field">
+              <label for="deviceSelect">기기 프리셋</label>
+              <select id="deviceSelect"></select>
+            </div>
+            <div class="screen-mode-group" id="screenModeGroup"></div>
+            <div class="preset-meta" id="deviceMeta"></div>
+
+            <div class="custom-grid" id="customGrid" hidden>
+              <div class="field">
+                <label for="customWidth">가로 해상도</label>
+                <input id="customWidth" type="number" min="720" max="2000" step="1" />
+              </div>
+              <div class="field">
+                <label for="customHeight">세로 해상도</label>
+                <input
+                  id="customHeight"
+                  type="number"
+                  min="1280"
+                  max="4000"
+                  step="1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-block">
+            <div class="section-heading">
+              <p class="eyebrow">STEP 3</p>
+              <h2>배경 스타일</h2>
+            </div>
+            <div class="theme-grid" id="themeGrid"></div>
+            <label class="toggle-row" for="sourceBlend">
+              <input id="sourceBlend" type="checkbox" checked />
+              <span>시간표 색을 배경에 블러 처리해서 섞기</span>
+            </label>
+            <label class="toggle-row" for="safePlacement">
+              <input id="safePlacement" type="checkbox" checked />
+              <span>시계 안전 영역과 겹치지 않게 자동 보정</span>
+            </label>
+          </div>
+
+          <div class="panel-block preview-control-block">
+            <div class="section-heading">
+              <p class="eyebrow">STEP 4</p>
+              <h2>배치 조정</h2>
+            </div>
+            <p class="block-copy">
+              크기와 위치를 조정하고, 미리보기의 중앙 점선과 안전 영역을 보며
+              배치를 맞출 수 있습니다.
+            </p>
+
+            <div class="compact-field-grid">
+              <div class="field">
+                <div class="field-head">
+                  <label for="sizeRange">시간표 크기</label>
+                  <output id="sizeValue">72%</output>
+                </div>
+                <input id="sizeRange" type="range" min="42" max="92" step="1" />
+              </div>
+
+              <div class="field">
+                <div class="field-head">
+                  <label for="xRange">가로 위치</label>
+                  <output id="xValue">50%</output>
+                </div>
+                <input id="xRange" type="range" min="5" max="95" step="1" />
+              </div>
+
+              <div class="field">
+                <div class="field-head">
+                  <label for="yRange">세로 위치</label>
+                  <output id="yValue">62%</output>
+                </div>
+                <input id="yRange" type="range" min="5" max="95" step="1" />
+              </div>
+
+              <div class="field">
+                <div class="field-head">
+                  <label for="cornerRange">모서리 반경</label>
+                  <output id="cornerValue">28px</output>
+                </div>
+                <input id="cornerRange" type="range" min="12" max="64" step="1" />
+              </div>
+            </div>
+
+            <div class="button-row compact-button-row">
+              <button id="autoArrangeButton" class="secondary-button" type="button">
+                시계 아래로 자동 배치
+              </button>
+              <button id="resetButton" class="ghost-button" type="button">
+                기본값으로 되돌리기
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="preview-stage reveal" style="--delay: 220ms">
+          <div class="preview-pin">
+            <div class="stage-header">
+              <div>
+                <p class="eyebrow">STEP 5</p>
+                <h2>미리보기 및 저장</h2>
+              </div>
+              <p class="preview-spec" id="previewSpec"></p>
+            </div>
+
+            <div class="preview-wrapper">
+              <div class="phone-preview" id="phonePreview">
+                <div class="preview-background">
+                  <div class="background-photo" id="backgroundPhoto"></div>
+                  <div class="background-gradient" id="backgroundGradient"></div>
+                  <div class="background-grid"></div>
+                  <div class="glow glow-one"></div>
+                  <div class="glow glow-two"></div>
+                </div>
+
+                <div class="center-guides" aria-hidden="true">
+                  <div class="center-line center-line-horizontal"></div>
+                  <div class="center-line center-line-vertical"></div>
+                </div>
+
+                <div class="clock-zone" id="clockZone">
+                  <span>시계 안전 영역</span>
+                </div>
+
+                <button class="image-card" id="imageCard" type="button">
+                  <img id="imageCardImage" alt="시간표 이미지 미리보기" />
+                </button>
+
+                <div class="display-cutout" id="displayCutout" hidden>
+                  <div class="display-cutout-shape">
+                    <div class="display-cutout-accent"></div>
+                  </div>
+                </div>
+
+                <div class="frame-overlay"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-block actions preview-actions">
+            <button id="downloadButton" class="primary-button" type="button">
+              PNG 다운로드
+            </button>
+            <p id="statusMessage" class="status-message" aria-live="polite">
+              시간표 이미지를 업로드하면 바로 미리보기가 시작됩니다.
+            </p>
+          </div>
+
+          <div class="preview-footer">
+            <p>시간표 카드를 직접 드래그하거나 슬라이더로 미세 조정할 수 있습니다.</p>
+            <span class="warning-pill" id="overlapWarning" hidden>
+              시계 영역과 겹치고 있습니다.
+            </span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <aside class="floating-preview-dock" id="floatingPreviewDock" hidden aria-live="polite">
+      <div class="floating-preview-panel">
+        <div class="floating-preview-head">
+          <div>
+            <p class="floating-preview-label">LIVE</p>
+            <p class="floating-preview-spec" id="floatingPreviewSpec"></p>
+          </div>
+          <div class="floating-preview-actions">
+            <button
+              class="floating-preview-toggle"
+              id="floatingPreviewToggle"
+              type="button"
+              aria-label="작은 미리보기를 옆으로 넣기"
+              title="작은 미리보기를 옆으로 넣기"
+            >
+              접기
+            </button>
+            <button class="floating-preview-jump" id="floatingPreviewJump" type="button">
+              크게 보기
+            </button>
+          </div>
+        </div>
+
+        <div class="floating-preview-shell">
+          <div class="phone-preview phone-preview--mini" id="floatingPhonePreview">
+            <div class="preview-background">
+              <div class="background-photo"></div>
+              <div class="background-gradient"></div>
+              <div class="background-grid"></div>
+              <div class="glow glow-one"></div>
+              <div class="glow glow-two"></div>
+            </div>
+
+            <div class="center-guides" aria-hidden="true">
+              <div class="center-line center-line-horizontal"></div>
+              <div class="center-line center-line-vertical"></div>
+            </div>
+
+            <div class="clock-zone">
+              <span>시계 안전 영역</span>
+            </div>
+
+            <button class="image-card" type="button" tabindex="-1" aria-hidden="true">
+              <img alt="시간표 이미지 축소 미리보기" />
+            </button>
+
+            <div class="display-cutout" hidden>
+              <div class="display-cutout-shape">
+                <div class="display-cutout-accent"></div>
+              </div>
+            </div>
+
+            <div class="frame-overlay"></div>
+          </div>
+        </div>
+      </div>
+      <button
+        class="floating-preview-peek"
+        id="floatingPreviewPeek"
+        type="button"
+        aria-label="작은 미리보기 다시 열기"
+        title="작은 미리보기 다시 열기"
+      >
+        미리보기
+      </button>
+    </aside>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

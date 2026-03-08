@@ -4,8 +4,7 @@
 
 ## 포함된 기능
 
-- 기본 시간표 이미지 `IMG_3712.JPG` 바로 사용
-- 추가 이미지 업로드
+- 사용자 시간표 이미지 업로드
 - iPhone 2016-2025 전 라인업 프리셋
 - Galaxy S / Note / Z Flip 플래그십 2016-2026 프리셋
 - 기기 프리셋 선택 또는 직접 해상도 입력
@@ -25,16 +24,36 @@ python3 -m http.server 4173
 
 그다음 `http://localhost:4173` 에서 확인하면 됩니다.
 
+분석 스크립트는 로컬 기본값에서는 꺼져 있습니다. 필요하면 루트의 `analytics-config.js`를 직접 수정하거나, 아래처럼 빌드용 환경변수를 주고 `dist/`를 생성해서 확인할 수 있습니다.
+
+```bash
+ETA_GA_MEASUREMENT_ID=G-XXXXXXXXXX ETA_CLARITY_PROJECT_ID=xxxxxxxx npm run build
+python3 -m http.server 4173 --directory dist
+```
+
 ## Vercel 배포
 
 1. 이 폴더를 GitHub 저장소로 올립니다.
 2. Vercel에서 저장소를 Import 합니다.
 3. Framework Preset은 `Other` 또는 자동 감지를 그대로 사용합니다.
-4. Build Command 없이 배포하면 정적 사이트로 바로 올라갑니다.
+4. Environment Variables에 아래 값을 추가합니다.
+5. 배포하면 `dist/analytics-config.js`에 측정 ID가 주입된 정적 사이트가 생성됩니다.
 
-## 기본 이미지 교체
+```text
+ETA_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+ETA_CLARITY_PROJECT_ID=xxxxxxxx
+ETA_ANALYTICS_DEBUG=false
+```
 
-- 루트의 `IMG_3712.JPG`를 다른 파일로 바꾸려면 파일명을 유지하면 됩니다.
-- 여러 기본 이미지를 쓰고 싶다면 `app.js`의 `builtInImages` 배열에 항목을 추가하면 됩니다.
-# eta-bg-maker
-# eta-bg-maker
+`ETA_ANALYTICS_DEBUG`는 선택값입니다. `true`로 두면 브라우저 콘솔에서 이벤트 로그를 같이 볼 수 있습니다.
+
+## 모니터링 설정
+
+- GA4는 `page_view` 자동 수집과 함께 업로드, 기기 변경, 화면 모드 변경, 테마 변경, 다운로드 같은 핵심 편집 이벤트를 보냅니다.
+- Clarity는 세션 리플레이/히트맵과 함께 동일한 이벤트 이름을 Custom Event로 기록합니다.
+- 현재 선택된 `device_id`, `screen_mode`, `theme_id`, `source_type` 등은 공통 컨텍스트로 같이 세팅됩니다.
+
+## 이미지 소스 정책
+
+- 배포 기본값은 `업로드 전용`입니다.
+- 필요하면 `app.js`의 `builtInImages` 배열에 기본 이미지를 다시 추가할 수 있습니다.
