@@ -55,9 +55,18 @@
             </div>
             <p class="block-copy">
               iPhone은 2016년부터 2025년 라인업까지, Galaxy는 2016년부터 2026년
-              플래그십 라인업까지 바로 선택할 수 있습니다.
+              플래그십 라인업까지 바로 선택할 수 있고, 원하는 기기가 없으면 직접
+              해상도를 넣을 수 있습니다.
             </p>
-            <div class="field">
+            <div class="screen-mode-group profile-mode-group" id="profileModeGroup">
+              <button class="screen-mode-button is-selected" type="button" data-profile-mode="preset">
+                프리셋 선택
+              </button>
+              <button class="screen-mode-button" type="button" data-profile-mode="custom">
+                직접 입력
+              </button>
+            </div>
+            <div class="field" id="devicePresetField">
               <label for="deviceSelect">기기 프리셋</label>
               <select id="deviceSelect"></select>
             </div>
@@ -67,19 +76,34 @@
             <div class="custom-grid" id="customGrid" hidden>
               <div class="field">
                 <label for="customWidth">가로 해상도</label>
-                <input id="customWidth" type="number" min="720" max="2000" step="1" />
+                <input
+                  id="customWidth"
+                  type="text"
+                  min="100"
+                  max="3200"
+                  step="1"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  autocomplete="off"
+                />
               </div>
               <div class="field">
                 <label for="customHeight">세로 해상도</label>
                 <input
                   id="customHeight"
-                  type="number"
-                  min="1280"
-                  max="4000"
+                  type="text"
+                  min="100"
+                  max="5000"
                   step="1"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  autocomplete="off"
                 />
               </div>
             </div>
+            <p class="preset-meta custom-hint" id="customHint" hidden>
+              원하는 기기가 없으면 가로·세로 해상도를 직접 넣고 공용 안전 영역 기준으로 배경화면을 만들 수 있습니다.
+            </p>
           </div>
 
           <div class="panel-block">

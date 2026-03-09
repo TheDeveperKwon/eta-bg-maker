@@ -402,6 +402,10 @@ input[type="range"] {
   gap: 10px;
 }
 
+.profile-mode-group {
+  margin-bottom: 10px;
+}
+
 .screen-mode-button {
   min-height: 48px;
   padding: 0 14px;
@@ -412,6 +416,10 @@ input[type="range"] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.custom-hint {
+  margin-top: 10px;
 }
 
 .theme-tile {

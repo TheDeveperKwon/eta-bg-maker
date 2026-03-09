@@ -1028,6 +1028,13 @@ const screenModes = [
   { id: "home", name: "홈 화면" },
 ];
 
+const customResolutionLimits = {
+  minWidth: 100,
+  maxWidth: 3200,
+  minHeight: 100,
+  maxHeight: 5000,
+};
+
 function createThemePreset(config) {
   return {
     photoBlendOpacity: 0.18,
@@ -1127,6 +1134,7 @@ const state = {
   sources: [...builtInImages],
   selectedSourceId: builtInImages[0]?.id ?? null,
   selectedDeviceId: deviceProfiles[0].id,
+  lastPresetDeviceId: deviceProfiles[0].id,
   selectedThemeId: "eta-white",
   screenMode: screenModes[0].id,
   sourceBlend: true,
@@ -1137,17 +1145,22 @@ const state = {
   cornerRadius: defaultsByMode.lock.radius,
   activeImage: null,
   dragSession: null,
-  customWidth: 1290,
-  customHeight: 2796,
+  customWidth: deviceProfiles[0].width,
+  customHeight: deviceProfiles[0].height,
+  customWidthDraft: String(deviceProfiles[0].width),
+  customHeightDraft: String(deviceProfiles[0].height),
 };
 
 const elements = {
   sourceGrid: document.getElementById("sourceGrid"),
   imageUpload: document.getElementById("imageUpload"),
+  profileModeGroup: document.getElementById("profileModeGroup"),
+  devicePresetField: document.getElementById("devicePresetField"),
   deviceSelect: document.getElementById("deviceSelect"),
   deviceMeta: document.getElementById("deviceMeta"),
   screenModeGroup: document.getElementById("screenModeGroup"),
   customGrid: document.getElementById("customGrid"),
+  customHint: document.getElementById("customHint"),
   customWidth: document.getElementById("customWidth"),
   customHeight: document.getElementById("customHeight"),
   themeGrid: document.getElementById("themeGrid"),
@@ -1257,9 +1270,95 @@ function getSelectedDevice() {
   const template = deviceProfiles.find((device) => device.id === "custom");
   return {
     ...template,
-    width: clamp(Number(state.customWidth) || template.width, 720, 2000),
-    height: clamp(Number(state.customHeight) || template.height, 1280, 4000),
+    width: clamp(
+      Number(state.customWidth) || template.width,
+      customResolutionLimits.minWidth,
+      customResolutionLimits.maxWidth,
+    ),
+    height: clamp(
+      Number(state.customHeight) || template.height,
+      customResolutionLimits.minHeight,
+      customResolutionLimits.maxHeight,
+    ),
   };
+}
+
+function syncCustomInputValue(element, value) {
+  if (document.activeElement === element) {
+    return;
+  }
+
+  element.value = value;
+}
+
+function sanitizeDigits(value) {
+  return String(value ?? "").replace(/\D+/g, "");
+}
+
+function syncCustomResolutionFromDevice(device) {
+  state.customWidth = clamp(
+    Number(device?.width) || deviceProfiles[0].width,
+    customResolutionLimits.minWidth,
+    customResolutionLimits.maxWidth,
+  );
+  state.customHeight = clamp(
+    Number(device?.height) || deviceProfiles[0].height,
+    customResolutionLimits.minHeight,
+    customResolutionLimits.maxHeight,
+  );
+  state.customWidthDraft = String(state.customWidth);
+  state.customHeightDraft = String(state.customHeight);
+}
+
+function updateCustomResolution(axis, inputElement) {
+  if (state.selectedDeviceId !== "custom") {
+    return;
+  }
+
+  const isWidth = axis === "width";
+  const min = isWidth ? customResolutionLimits.minWidth : customResolutionLimits.minHeight;
+  const max = isWidth ? customResolutionLimits.maxWidth : customResolutionLimits.maxHeight;
+  const draftKey = isWidth ? "customWidthDraft" : "customHeightDraft";
+  const valueKey = isWidth ? "customWidth" : "customHeight";
+  const normalized = sanitizeDigits(inputElement.value);
+  const parsed = Number(normalized);
+
+  if (inputElement.value !== normalized) {
+    inputElement.value = normalized;
+  }
+
+  state[draftKey] = normalized;
+
+  if (normalized && Number.isFinite(parsed) && parsed >= min) {
+    state[valueKey] = clamp(parsed, min, max);
+  }
+
+  render();
+  syncAnalyticsContext();
+}
+
+function commitCustomResolution(axis) {
+  if (state.selectedDeviceId !== "custom") {
+    return;
+  }
+
+  const isWidth = axis === "width";
+  const min = isWidth ? customResolutionLimits.minWidth : customResolutionLimits.minHeight;
+  const max = isWidth ? customResolutionLimits.maxWidth : customResolutionLimits.maxHeight;
+  const draftKey = isWidth ? "customWidthDraft" : "customHeightDraft";
+  const valueKey = isWidth ? "customWidth" : "customHeight";
+  const inputElement = isWidth ? elements.customWidth : elements.customHeight;
+  const normalized = sanitizeDigits(state[draftKey]);
+  const parsed = Number(normalized);
+
+  if (normalized && Number.isFinite(parsed)) {
+    state[valueKey] = clamp(parsed, min, max);
+  }
+
+  state[draftKey] = String(state[valueKey]);
+  inputElement.value = state[draftKey];
+  render();
+  syncAnalyticsContext();
 }
 
 function syncAnalyticsContext() {
@@ -1278,6 +1377,30 @@ function syncAnalyticsContext() {
     safe_placement: state.safePlacement,
     source_blend: state.sourceBlend,
   });
+}
+
+function setProfileMode(mode) {
+  if (mode === "custom") {
+    state.selectedDeviceId = "custom";
+    autoArrangeCard(false);
+    render();
+    syncAnalyticsContext();
+    trackEvent("profile_mode_changed", {
+      profile_mode: "custom",
+    });
+    setStatus("직접 입력 모드로 전환했습니다.");
+    return;
+  }
+
+  state.selectedDeviceId = state.lastPresetDeviceId || deviceProfiles[0].id;
+  syncCustomResolutionFromDevice(getSelectedDevice());
+  autoArrangeCard(false);
+  render();
+  syncAnalyticsContext();
+  trackEvent("profile_mode_changed", {
+    profile_mode: "preset",
+  });
+  setStatus("기기 프리셋 모드로 전환했습니다.");
 }
 
 function getDisplayCutout(device) {
@@ -1447,6 +1570,10 @@ function renderSources() {
 function renderDevices() {
   const groupedDevices = deviceProfiles.reduce((groups, device) => {
     const groupKey = device.group || "Custom";
+    if (groupKey === "Custom") {
+      return groups;
+    }
+
     if (!groups[groupKey]) {
       groups[groupKey] = [];
     }
@@ -1472,7 +1599,15 @@ function renderDevices() {
     })
     .join("");
 
-  elements.deviceSelect.value = state.selectedDeviceId;
+  elements.deviceSelect.value =
+    state.selectedDeviceId === "custom" ? state.lastPresetDeviceId : state.selectedDeviceId;
+}
+
+function renderProfileModeToggle() {
+  const selectedMode = state.selectedDeviceId === "custom" ? "custom" : "preset";
+  elements.profileModeGroup.querySelectorAll("[data-profile-mode]").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.profileMode === selectedMode);
+  });
 }
 
 function renderScreenModes() {
@@ -1699,18 +1834,27 @@ function render() {
   const selectedSource = getSelectedSource();
   const resolved = resolveCardPlacement(device);
   const cutout = getDisplayCutout(device);
+  const isCustomDevice = state.selectedDeviceId === "custom";
 
   state.x = resolved.x;
   state.y = resolved.y;
   syncControlValues();
 
-  elements.customGrid.hidden = state.selectedDeviceId !== "custom";
-  elements.deviceSelect.value = state.selectedDeviceId;
-  elements.customWidth.value = device.width;
-  elements.customHeight.value = device.height;
+  renderProfileModeToggle();
+  elements.devicePresetField.hidden = isCustomDevice;
+  elements.customGrid.hidden = !isCustomDevice;
+  elements.customHint.hidden = !isCustomDevice;
+  elements.deviceSelect.hidden = isCustomDevice;
+  elements.deviceSelect.value = isCustomDevice ? state.lastPresetDeviceId : state.selectedDeviceId;
+  elements.customWidth.disabled = !isCustomDevice;
+  elements.customHeight.disabled = !isCustomDevice;
+  syncCustomInputValue(elements.customWidth, state.customWidthDraft);
+  syncCustomInputValue(elements.customHeight, state.customHeightDraft);
   elements.sourceBlend.checked = state.sourceBlend;
   elements.safePlacement.checked = state.safePlacement;
-  elements.deviceMeta.textContent = `${device.width} × ${device.height} · ${device.note}`;
+  elements.deviceMeta.textContent = isCustomDevice
+    ? `${device.width} × ${device.height} · 직접 입력 해상도`
+    : `${device.width} × ${device.height} · ${device.note}`;
   previewTargets.forEach((preview) => {
     applyPreviewState(preview, device, theme, selectedSource, resolved, cutout);
   });
@@ -2004,8 +2148,16 @@ function handleDragEnd() {
 function bindEvents() {
   elements.imageUpload.addEventListener("change", handleSourceUpload);
 
+  elements.profileModeGroup.querySelectorAll("[data-profile-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setProfileMode(button.dataset.profileMode);
+    });
+  });
+
   elements.deviceSelect.addEventListener("change", () => {
     state.selectedDeviceId = elements.deviceSelect.value;
+    state.lastPresetDeviceId = elements.deviceSelect.value;
+    syncCustomResolutionFromDevice(getSelectedDevice());
     autoArrangeCard(false);
     render();
     syncAnalyticsContext();
@@ -2017,15 +2169,19 @@ function bindEvents() {
   });
 
   elements.customWidth.addEventListener("input", () => {
-    state.customWidth = clamp(Number(elements.customWidth.value) || 1290, 720, 2000);
-    render();
-    syncAnalyticsContext();
+    updateCustomResolution("width", elements.customWidth);
   });
 
   elements.customHeight.addEventListener("input", () => {
-    state.customHeight = clamp(Number(elements.customHeight.value) || 2796, 1280, 4000);
-    render();
-    syncAnalyticsContext();
+    updateCustomResolution("height", elements.customHeight);
+  });
+
+  elements.customWidth.addEventListener("blur", () => {
+    commitCustomResolution("width");
+  });
+
+  elements.customHeight.addEventListener("blur", () => {
+    commitCustomResolution("height");
   });
 
   elements.sourceBlend.addEventListener("change", () => {
