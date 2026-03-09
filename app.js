@@ -1424,7 +1424,7 @@ function getVisibleDisplayBounds(device, cardHeight = 0) {
 function getCardMetrics(device) {
   const image = state.activeImage;
   const imageAspect = image ? image.naturalHeight / image.naturalWidth : 1.56;
-  const width = clamp(state.cardWidthRatio, 0.42, 0.92);
+  const width = clamp(state.cardWidthRatio, 0.24, 0.96);
   const height = width * imageAspect * (device.width / device.height);
   return { width, height };
 }
